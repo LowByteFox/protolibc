@@ -8,7 +8,7 @@ _start:
 	mov	%rdx, environ
 	and $-16, %rsp
 
-	call main
+	call __libc_start_main
 	mov %rax, %rbx
 	call __neatlibc_exit
 	mov %rbx, %rdi

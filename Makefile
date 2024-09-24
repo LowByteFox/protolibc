@@ -6,7 +6,12 @@ AS = tcc
 
 CFLAGS = -O2 -Iinclude
 
-all: start.o libc.a
+all: prepare start.o libc.a
+
+prepare:
+	cp base/syscall.s arch/$(TARGET)/syscall.s
+	$(CC) syscall2gen.c -o syscall2gen
+	./syscall2gen $(TARGET)
 
 %.o: %.s
 	$(AS) -c $^ -o $@
@@ -18,7 +23,7 @@ OBJS2 = $(patsubst %.s,%.o,$(wildcard arch/$(TARGET)/*.s))
 
 start.o: arch/$(TARGET)/start.o
 	ln arch/$(TARGET)/start.o start.o
-libc.a: $(OBJS1) $(OBJS2)
+libc.a: $(OBJS1) $(OBJS2) arch/$(TARGET)/syscall.o
 	$(AR) rcs $@ $(OBJS1) $(filter-out arch/$(TARGET)/start.o, $(OBJS2))
 
 INLIB = $(DESTDIR)$(PREFIX)/lib
@@ -34,13 +39,11 @@ install: start.o libc.a
 uninstall:
 	rm -vf $(INLIB)/libc.a
 	rm -vf $(INLIB)/crt1.o
-	for file in $$(cd include; find . -type f); do \
-		rm -vf "$(ININC)/$$file"; \
-	done
-
-	for dir in $$(cd include; find . -type d | tail -n +2); do \
-		rm -rvf "$(ININC)/$$dir"; \
+	for file in $$(cd include; find . -type f && find . -type d | tail -n +2); do \
+		rm -rvf "$(ININC)/$$file"; \
 	done
 
 clean:
-	rm -f $(OBJS1) start.o *.a $(OBJS2)
+	rm -f $(OBJS1) syscall2gen start.o *.a $(OBJS2) arch/$(TARGET)/syscall.o
+
+.PHONY = all install uninstall clean

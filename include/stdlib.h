@@ -26,14 +26,5 @@ int system(char *cmd);
 void srand(unsigned int seed);
 int rand(void);
 
-/* for examining heap memory allocation */
-#ifdef MEMTST
-void *memtst_malloc(long n);
-void memtst_free(void *v);
-void *memtst_calloc(long n, long sz);
-void *memtst_realloc(void *v, long sz);
-#define malloc	memtst_malloc
-#define free	memtst_free
-#define calloc	memtst_calloc
-#define realloc	memtst_realloc
-#endif
+const char *getprogname();
+void setprogname(const char *);

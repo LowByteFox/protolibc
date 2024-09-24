@@ -40,6 +40,8 @@ void _exit(int status);
 
 int sleep(int n);
 
+int pledge(const char *, const char *);
+
 /* standard file descriptors */
 #define STDIN_FILENO	0
 #define STDOUT_FILENO	1

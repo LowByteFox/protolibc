@@ -7,6 +7,7 @@
 #define ATEXIT_MAX		32
 
 char **environ;
+extern const char *__progname;
 
 int abs(int n)
 {
@@ -43,6 +44,22 @@ int system(char *cmd)
 	if (waitpid(pid, &ret, 0) != pid)
 		return -1;
 	return ret;
+}
+
+const char *getprogname()
+{
+    return __progname;
+}
+
+void setprogname(const char *progname)
+{
+    char *tmpn;
+
+    tmpn = strrchr(progname, '/');
+    if (tmpn == NULL)
+        __progname = progname;
+    else
+        __progname = tmpn + 1;
 }
 
 static void (*atexit_func[ATEXIT_MAX])(void);
