@@ -76,7 +76,7 @@ static const syscall syscalls[] = {
     {"setsid",          124,    0, PLEDGE_PROC},
     {"gettimeofday",    96,     2, PLEDGE_STDIO},
     {"settimeofday",    164,    2, PLEDGE_SETTIME},
-    {"mmap",            9,      6, PLEDGE_STDIO}, /* INFO: OpenBSD pledge says so */
+    // {"mmap",            9,      6, PLEDGE_STDIO}, /* INFO: OpenBSD pledge says so */
     {"mprotect",        10,     3, PLEDGE_STDIO}, /* same here */
     {"munmap",          11,     2, PLEDGE_STDIO}, /* same here */
     {"stat",            4,      2, PLEDGE_RPATH},
@@ -133,8 +133,7 @@ void perform_syscall(FILE *f, const syscall *s) {
 }
 
 void syscall_footer(FILE *f) {
-    fprintf(f, "    leave\n"
-               "    ret\n\n");
+    fprintf(f, "\n");
 }
 
 void pledge_table_header(FILE *f) {

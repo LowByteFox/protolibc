@@ -24,3 +24,10 @@ brk:
 	mov	$12, %eax
 	jmp	__syscall
 
+# XXX: Temporary solution, it somehow gets messed up
+# Not sure what could be wrong, further fixing will be done
+.global mmap
+mmap:
+    mov $9, %eax
+    jmp __syscall
+

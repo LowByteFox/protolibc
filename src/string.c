@@ -53,14 +53,12 @@ void *memmove(void *dst, void *src, long n) {
     return dst;
 }
 
-void *memset(void *s, int v, long n) {
-    unsigned char *ptr = (unsigned char *)s;
-    unsigned char byte = (unsigned char)v;
+void *memset(void *s, int v, size_t n) {
+    unsigned char* p = (unsigned char*)s;
 
     while (n--) {
-        *ptr++ = byte;
+        *p++ = (unsigned char)v;
     }
-
     return s;
 }
 

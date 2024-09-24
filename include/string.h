@@ -2,7 +2,7 @@
 
 void *memcpy(void *dst, void *src, long n);
 void *memmove(void *dst, void *src, long n);
-void *memset(void *s, int v, long n);
+void *memset(void *s, int v, size_t n);
 void *memchr(void *s, int c, long n);
 void *memrchr(void *s, int c, long n);
 int memcmp(char *s1, char *s2, long n);
