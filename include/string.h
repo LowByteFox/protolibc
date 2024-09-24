@@ -1,4 +1,10 @@
+#include <sys/cdefs.h>
 #include <stddef.h>
+
+#ifndef _STRING_H_
+#define _STRING_H_
+
+__BEGIN_DECLS
 
 void *memcpy(void *dst, void *src, long n);
 void *memmove(void *dst, void *src, long n);
@@ -24,3 +30,7 @@ char *strdup(const char *s);
 #define memchr(s, c, n)		__memchr_c(s, c, n)
 
 void *__memchr_c(void *s, int c, long n);
+
+__END_DECLS
+
+#endif

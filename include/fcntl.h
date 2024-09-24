@@ -1,5 +1,9 @@
-#ifndef _FCNTL_H
-#define _FCNTL_H
+#include <sys/cdefs.h>
+
+#ifndef _FCNTL_H_
+#define _FCNTL_H_
+
+__BEGIN_DECLS
 
 #define O_RDONLY	00000
 #define O_WRONLY	00001
@@ -48,5 +52,7 @@
 int open(char *path, int flags, ...);
 int creat(char *path, int mode);
 int fcntl(int fd, int cmd, ...);
+
+__END_DECLS
 
 #endif

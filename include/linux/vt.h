@@ -1,5 +1,9 @@
-#ifndef _LINUX_VT_H
-#define _LINUX_VT_H
+#include <sys/cdefs.h>
+
+#ifndef _LINUX_VT_H_
+#define _LINUX_VT_H_
+
+__BEGIN_DECLS
 
 #define VT_OPENQRY	0x5600
 #define VT_GETMODE	0x5601
@@ -47,5 +51,7 @@ struct vt_consize {
 	unsigned short v_vcol;
 	unsigned short v_ccol;
 };
+
+__END_DECLS
 
 #endif

@@ -8,3 +8,4 @@ and any other compiler
 - BSD functions like `setprogname`, `getprogname`
 - OpenBSD-like `pledge`
 - custom 2 assert functions `assert2` and `env_assert`
+- `__PROTOGEN__` macro indicating you are linking against protolibc

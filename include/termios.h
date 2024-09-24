@@ -1,4 +1,11 @@
+#include <sys/cdefs.h>
+
+#ifndef _TERMIOS_H_
+#define _TERMIOS_H_
+
 #include <sys/types.h>
+
+__BEGIN_DECLS
 
 struct winsize {
 	unsigned short ws_row;
@@ -158,3 +165,7 @@ struct termios {
 
 int tcgetattr(int fd, struct termios *term);
 int tcsetattr(int fd, int actions, struct termios *term);
+
+__END_DECLS
+
+#endif

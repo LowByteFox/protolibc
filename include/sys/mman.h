@@ -1,5 +1,9 @@
-#ifndef _SYS_MMAN_H
-#define _SYS_MMAN_H
+#include <sys/cdefs.h>
+
+#ifndef _SYS_MMAN_H_
+#define _SYS_MMAN_H_
+
+__BEGIN_DECLS
 
 #define PROT_NONE	0x0
 #define PROT_READ	0x1
@@ -24,5 +28,7 @@
 
 void *mmap(void *addr, int len, int prot, int flags, int fd, int offset);
 int munmap(void *addr, int len);
+
+__END_DECLS
 
 #endif

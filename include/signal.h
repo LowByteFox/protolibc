@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _SIGNAL_H_
+#define _SIGNAL_H_
+
+__BEGIN_DECLS
+
 #define NSIG		32
 
 #define SIGHUP		 1
@@ -47,3 +54,7 @@ typedef void (*sighandler_t)(int);
 sighandler_t signal(int signum, sighandler_t action);
 int kill(int pid, int sig);
 int raise(int sig);
+
+__END_DECLS
+
+#endif

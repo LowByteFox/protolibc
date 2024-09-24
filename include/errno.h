@@ -1,5 +1,9 @@
-#ifndef _ERRNO_H
-#define _ERRNO_H
+#include <sys/cdefs.h>
+
+#ifndef _ERRNO_H_
+#define _ERRNO_H_
+
+__BEGIN_DECLS
 
 extern int errno;
 extern char *sys_errlist[];
@@ -39,5 +43,7 @@ extern int sys_nerr;
 #define EPIPE		32	/* Broken pipe */
 #define EDOM		33	/* Math argument out of domain of func */
 #define ERANGE		34	/* Math result not representable */
+
+__END_DECLS
 
 #endif

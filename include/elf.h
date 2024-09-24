@@ -1,7 +1,11 @@
-#ifndef _ELF_H
-#define	_ELF_H
+#include <sys/cdefs.h>
+
+#ifndef _ELF_H_
+#define	_ELF_H_
 
 #include <stdint.h>
+
+__BEGIN_DECLS
 
 typedef uint16_t Elf32_Half;
 typedef uint16_t Elf64_Half;
@@ -603,5 +607,7 @@ typedef struct {
 #define R_X86_64_IRELATIVE	37
 
 #define R_X86_64_NUM		38
+
+__END_DECLS
 
 #endif

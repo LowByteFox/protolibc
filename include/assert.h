@@ -1,3 +1,5 @@
+#include <sys/cdefs.h>
+
 /* 
  * Unlike other ANSI headers, <assert.h> may be included multiple times,
  * with and without NDEBUG defined
@@ -33,10 +35,10 @@
 #ifndef _ASSERT_H_
 #define _ASSERT_H_
 
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112
-#define static_assert _Static_assert
-#endif
+__BEGIN_DECLS
 
 void __assert(const char *, int, const char *, const char *);
+
+__END_DECLS
 
 #endif

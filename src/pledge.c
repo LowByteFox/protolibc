@@ -10,7 +10,7 @@ static int __PLEDGE_FLAGS = 0xFFFFFFFF;
 static int ready = 0;
 
 typedef struct {
-    const char *group;
+    int group;
     const char *group_name;
 } pledge_group;
 

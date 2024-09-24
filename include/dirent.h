@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _DIRENT_H_
+#define _DIRENT_H_
+
+__BEGIN_DECLS
+
 typedef struct __dirent_dir DIR;
 
 struct dirent {
@@ -10,3 +17,7 @@ struct dirent {
 DIR *opendir(char *path);
 int closedir(DIR *dir);
 struct dirent *readdir(DIR *dir);
+
+__END_DECLS
+
+#endif

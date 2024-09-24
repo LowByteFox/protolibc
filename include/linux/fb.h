@@ -1,7 +1,11 @@
-#ifndef _LINUX_FB_H
-#define _LINUX_FB_H
+#include <sys/cdefs.h>
+
+#ifndef _LINUX_FB_H_
+#define _LINUX_FB_H_
 
 #include <linux/types.h>
+
+__BEGIN_DECLS
 
 struct dentry;
 
@@ -253,5 +257,7 @@ struct fb_cursor {
 
 #define FB_BACKLIGHT_LEVELS	128
 #define FB_BACKLIGHT_MAX	0xFF
+
+__END_DECLS
 
 #endif

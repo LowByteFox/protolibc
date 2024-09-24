@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _STDIO_H_
+#define _STDIO_H_
+
+__BEGIN_DECLS
+
 #include <stdarg.h>
 
 #define EOF		(-1)
@@ -50,3 +57,7 @@ long fwrite(void *s, long sz, long n, FILE *fp);
 long fread(void *s, long sz, long n, FILE *fp);
 
 void perror(char *s);
+
+__END_DECLS
+
+#endif

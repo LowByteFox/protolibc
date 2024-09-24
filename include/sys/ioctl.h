@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _SYS_IOCTL_H_
+#define _SYS_IOCTL_H_
+
+__BEGIN_DECLS
+
 #define TCGETS		0x5401
 #define TCSETS		0x5402
 #define TCSETSW		0x5403
@@ -52,3 +59,7 @@
 #define SIOCGSTAMP	0x8906
 
 int ioctl(int fd, int cmd, ...);
+
+__END_DECLS
+
+#endif

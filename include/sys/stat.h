@@ -1,5 +1,9 @@
-#ifndef _SYS_STAT_H
-#define _SYS_STAT_H
+#include <sys/cdefs.h>
+
+#ifndef _SYS_STAT_H_
+#define _SYS_STAT_H_
+
+__BEGIN_DECLS
 
 #include <inttypes.h>
 
@@ -58,7 +62,7 @@ struct stat {
 	unsigned long	st_mtime_nsec;
 	unsigned long	st_ctime;
 	unsigned long	st_ctime_nsec;
-	long		__unused[3];
+	long		__empty[3];
 };
 
 #else
@@ -96,5 +100,7 @@ int umask(int mask);
 int mkdir(char *path, int mode);
 int mknod(char *path, int mode, int dev);
 int mkfifo(char *path, int mode);
+
+__END_DECLS
 
 #endif

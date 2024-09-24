@@ -1,5 +1,9 @@
-#ifndef _SYS_TYPES_H
-#define _SYS_TYPES_H
+#include <sys/cdefs.h>
+
+#ifndef _SYS_TYPES_H_
+#define _SYS_TYPES_H_
+
+__BEGIN_DECLS
 
 #include <inttypes.h>
 
@@ -19,5 +23,7 @@ typedef signed long ino_t;
 typedef uint32_t uid32_t;
 typedef uint32_t gid32_t;
 typedef long fpos_t;
+
+__END_DECLS
 
 #endif

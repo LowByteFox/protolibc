@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _SYS_WAIT_H_
+#define _SYS_WAIT_H_
+
+__BEGIN_DECLS
+
 #define WNOHANG		0x00000001
 #define WUNTRACED	0x00000002
 
@@ -16,3 +23,7 @@
 
 int wait(int *status);
 int waitpid(int pid, int *status, int options);
+
+__END_DECLS
+
+#endif

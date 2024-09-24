@@ -1,4 +1,10 @@
+#include <sys/cdefs.h>
 #include <stddef.h>
+
+#ifndef _STDLIB_H_
+#define _STDLIB_H_
+
+__BEGIN_DECLS
 
 #define RAND_MAX		0x7fffffff
 
@@ -28,3 +34,7 @@ int rand(void);
 
 const char *getprogname();
 void setprogname(const char *);
+
+__END_DECLS
+
+#endif

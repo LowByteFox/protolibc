@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _POLL_H_
+#define _POLL_H_
+
+__BEGIN_DECLS
+
 #define POLLIN		0x0001
 #define POLLPRI		0x0002
 #define POLLOUT		0x0004
@@ -19,3 +26,7 @@ struct pollfd {
 typedef unsigned int nfds_t;
 
 extern int poll(struct pollfd *ufds, nfds_t nfds, int timeout);
+
+__END_DECLS
+
+#endif

@@ -1,5 +1,9 @@
-#ifndef	_CTYPE_H
-#define _CTYPE_H
+#include <sys/cdefs.h>
+
+#ifndef	_CTYPE_H_
+#define _CTYPE_H_
+
+__BEGIN_DECLS
 
 int isascii(int c);
 int isblank(int c);
@@ -14,5 +18,7 @@ int ispunct(int c);
 
 int tolower(int c);
 int toupper(int c);
+
+__END_DECLS
 
 #endif

@@ -1,5 +1,9 @@
-#ifndef _INTTYPES_H
-#define _INTTYPES_H
+#include <sys/cdefs.h>
+
+#ifndef _INTTYPES_H_
+#define _INTTYPES_H_
+
+__BEGIN_DECLS
 
 typedef char int8_t;
 typedef short int16_t;
@@ -15,5 +19,7 @@ typedef long int64_t;
 typedef unsigned long long uint64_t;
 typedef long long int64_t;
 #endif
+
+__END_DECLS
 
 #endif

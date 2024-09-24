@@ -1,5 +1,9 @@
+#include <sys/cdefs.h>
+
 #ifndef _PLEDGE_H_
 #define _PLEDGE_H_
+
+__BEGIN_DECLS
 
 #define PLEDGE_STDIO    1
 #define PLEDGE_RPATH    1 << 1
@@ -13,5 +17,7 @@
 #define PLEDGE_ID       1 << 9
 
 void __pledge_check(const int mode, int syscall_num);
+
+__END_DECLS
 
 #endif

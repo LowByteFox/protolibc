@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _REGEX_H_
+#define _REGEX_H_
+
+__BEGIN_DECLS
+
 #define REG_EXTENDED		0x01
 #define REG_NOSUB		0x02
 #define REG_ICASE		0x04
@@ -16,3 +23,7 @@ int regcomp(regex_t *preg, char *regex, int cflags);
 int regexec(regex_t *preg, char *str, int nmatch, regmatch_t pmatch[], int eflags);
 int regerror(int errcode, regex_t *preg, char *errbuf, int errbuf_size);
 void regfree(regex_t *preg);
+
+__END_DECLS
+
+#endif

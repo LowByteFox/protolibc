@@ -1,5 +1,9 @@
-#ifndef	_TIME_H
-#define	_TIME_H
+#include <sys/cdefs.h>
+
+#ifndef	_TIME_H_
+#define	_TIME_H_
+
+__BEGIN_DECLS
 
 #include <sys/types.h>
 
@@ -31,5 +35,7 @@ struct tm *gmtime(time_t *timep);
 
 extern long timezone;
 void tzset(void);
+
+__END_DECLS
 
 #endif

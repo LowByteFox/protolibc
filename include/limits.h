@@ -1,5 +1,5 @@
-#ifndef _LIMITS_H
-#define _LIMITS_H
+#ifndef _LIMITS_H_
+#define _LIMITS_H_
 
 #define CHAR_BIT    8
 #define SCHAR_MIN   -127

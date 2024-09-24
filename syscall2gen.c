@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __PROTOGEN__
+# include <unistd.h>
+#endif
+
 #define _(expr) #expr
 
 static const char *registers[] = {"%rdi", "%rsi", "%rdx", "%r10", "%r8", "%r9"};
@@ -153,6 +157,13 @@ int main(int argc, char **argv) {
     if (argc != 2) {
         return 1;
     }
+
+#ifdef __PROTOGEN__
+    if (pledge("stdio", NULL) == -1) {
+        perror("pledge");
+        return 1;
+    }
+#endif
 
     char path_buf[256] = {0};
     snprintf(path_buf, 255, "arch/%s/syscall.s", argv[1]);

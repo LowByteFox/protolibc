@@ -1,3 +1,10 @@
+#include <sys/cdefs.h>
+
+#ifndef _UNISTD_H_
+#define _UNISTD_H_
+
+__BEGIN_DECLS
+
 #include <stddef.h>
 
 /* access() flags */
@@ -46,3 +53,7 @@ int pledge(const char *, const char *);
 #define STDIN_FILENO	0
 #define STDOUT_FILENO	1
 #define STDERR_FILENO	2
+
+__END_DECLS
+
+#endif
