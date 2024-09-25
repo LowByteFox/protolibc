@@ -1,5 +1,5 @@
 __syscall:
-	mov	%rcx, %r10
+    mov	%rcx, %r10
 	syscall
 
 	cmp	$0, %rax
@@ -24,10 +24,27 @@ brk:
 	mov	$12, %eax
 	jmp	__syscall
 
-# XXX: Temporary solution, it somehow gets messed up
-# Not sure what could be wrong, further fixing will be done
+# INFO: This syscall cannot be generated
 .global mmap
 mmap:
+    push %r9
+    push %r8
+    push %r10
+    push %rdx
+    push %rsi
+    push %rdi
+    push %rcx
+    mov $9, %eax
+    mov %rax, %rsi
+    mov $1, %eax
+    mov %rax, %rdi
+    call __pledge_check
+    pop %rcx
+    pop %rdi
+    pop %rsi
+    pop %rdx
+    pop %r10
+    pop %r8
+    pop %r9
     mov $9, %eax
     jmp __syscall
-

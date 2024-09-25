@@ -172,3 +172,56 @@ int strncmp(char *d, char *s, long n) {
     }
     return 0;
 }
+
+size_t strlcpy(char *dst, const char *src, size_t dstsize)
+{
+    const char *osrc = src;
+    size_t nleft = dstsize;
+
+    /* Copy as many bytes as will fit. */
+    if (nleft != 0) {
+        while (--nleft != 0) {
+            if ((*dst++ = *src++) == '\0')
+                break;
+        }
+    }
+
+    /* Not enough room in dst, add NUL and traverse rest of src. */
+    if (nleft == 0) {
+        if (dstsize != 0)
+            *dst = '\0'; /* NUL-terminate dst */
+        while (*src++)
+            ;
+    }
+
+    return src - osrc - 1; /* count does not include NUL */
+}
+
+size_t strlcat(char *dst, const char *src, size_t dstsize)
+{
+    const char *odst = dst;
+    const char *osrc = src;
+    size_t n = dstsize;
+    size_t dlen;
+
+    /* Find the end of dst and adjust bytes left but don't go past end. */
+    while (n-- != 0 && *dst != '\0')
+        dst++;
+    dlen = dst - odst;
+    n = dstsize - dlen;
+
+    if (n-- == 0)
+        return(dlen + strlen(src));
+
+    while (*src != '\0') {
+        if (n != 0) {
+            *dst++ = *src;
+            n--;
+        }
+        src++;
+    }
+
+    *dst = '\0';
+
+    return dlen + (src - osrc); /* count does not include NUL */
+}

@@ -26,6 +26,10 @@ char *strstr(char *s, char *r);
 
 char *strdup(const char *s);
 
+/* BSD related string function */
+size_t strlcpy(char *dst, const char *src, size_t dstsize);
+size_t strlcat(char *dst, const char *src, size_t dstsize);
+
 /* faster implementations */
 #define memchr(s, c, n)		__memchr_c(s, c, n)
 
