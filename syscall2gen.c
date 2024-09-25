@@ -80,7 +80,7 @@ static const syscall syscalls[] = {
     {"setsid",          124,    0, PLEDGE_PROC},
     {"gettimeofday",    96,     2, PLEDGE_STDIO},
     {"settimeofday",    164,    2, PLEDGE_SETTIME},
-    // {"mmap",            9,      6, PLEDGE_STDIO}, /* INFO: OpenBSD pledge says so */
+    {"mmap",            9,      6, PLEDGE_STDIO}, /* INFO: OpenBSD pledge says so */
     {"mprotect",        10,     3, PLEDGE_STDIO}, /* same here */
     {"munmap",          11,     2, PLEDGE_STDIO}, /* same here */
     {"stat",            4,      2, PLEDGE_RPATH},
@@ -115,6 +115,8 @@ void store_registers(FILE *f, const syscall *s) {
     for (int i = s->nargs - 1; i >= 0; i--) {
         fprintf(f, "    push %s\n", registers[i]);
     }
+
+    fprintf(f, "    push %%rcx\n"); /* persist just in case */
 }
 
 void call_pledge_check(FILE *f, const syscall *s) {
@@ -126,6 +128,8 @@ void call_pledge_check(FILE *f, const syscall *s) {
 }
 
 void restore_registers(FILE *f, const syscall *s) {
+    fprintf(f, "    pop %%rcx\n");
+
     for (int i = 0; i < s->nargs; i++) {
         fprintf(f, "    pop %s\n", registers[i]);
     }
