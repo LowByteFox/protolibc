@@ -2,3 +2,4 @@
 *.o
 arch/amd64/syscall.s
 a.out
+syscall2gen

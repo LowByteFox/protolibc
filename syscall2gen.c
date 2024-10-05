@@ -1,6 +1,7 @@
 #include "include/pledge.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __PROTOGEN__
 # include <unistd.h>
@@ -155,6 +156,12 @@ void pledge_table_footer(FILE *f) {
 
 int main(int argc, char **argv) {
     if (argc != 2) {
+        return 1;
+    }
+
+    if (strcmp(argv[1], "amd64") == 0) {
+    } else {
+        fprintf(stderr, "Unknown CPU arch: %s\n", argv[1]);
         return 1;
     }
 
