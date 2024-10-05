@@ -8,7 +8,7 @@
 
 #define _(expr) #expr
 
-static const char *registers[] = {"%rdi", "%rsi", "%rdx", "%r10", "%r8", "%r9"};
+static const char *registers[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 
 typedef struct {
     const char *name;
@@ -115,8 +115,6 @@ void store_registers(FILE *f, const syscall *s) {
     for (int i = s->nargs - 1; i >= 0; i--) {
         fprintf(f, "    push %s\n", registers[i]);
     }
-
-    fprintf(f, "    push %%rcx\n"); /* persist just in case */
 }
 
 void call_pledge_check(FILE *f, const syscall *s) {
@@ -128,8 +126,6 @@ void call_pledge_check(FILE *f, const syscall *s) {
 }
 
 void restore_registers(FILE *f, const syscall *s) {
-    fprintf(f, "    pop %%rcx\n");
-
     for (int i = 0; i < s->nargs; i++) {
         fprintf(f, "    pop %s\n", registers[i]);
     }

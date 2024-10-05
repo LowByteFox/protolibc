@@ -10,7 +10,7 @@ all: prepare start.o libc.a
 
 prepare:
 	cp base/syscall.s arch/$(TARGET)/syscall.s
-	$(CC) syscall2gen.c -o syscall2gen
+	$(CC) -g syscall2gen.c -o syscall2gen
 	./syscall2gen $(TARGET)
 
 %.o: %.s

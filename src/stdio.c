@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUFSZ		1024
+#define BUFSZ		4096
 
 static char _ibuf[BUFSZ], _obuf[BUFSZ], _ebuf[BUFSZ];
 static FILE _stdin = {0, EOF, _ibuf, NULL, BUFSZ, 0};
@@ -52,6 +52,7 @@ FILE *fopen(char *path, char *mode)
 
 int fclose(FILE *fp)
 {
+    fflush(fp); /* flush write buffer to the OS */
 	int ret = close(fp->fd);
 	if (fp->iown)
 		free(fp->ibuf);
@@ -77,9 +78,16 @@ int fputc(int c, FILE *fp)
 		fp->obuf[fp->olen++] = c;
 		fp->ostat++;
 	}
-	if (c == '\n' || fp->olen == fp->osize)
-		if (fflush(fp))
-			return EOF;
+    /* not stderr */
+    if (fp->fd > 2) {
+        if (fp->olen == fp->osize)
+            if (fflush(fp))
+                return EOF;
+    } else {
+        if (c == '\n' || fp->olen == fp->osize)
+		    if (fflush(fp))
+			    return EOF;
+    }
 	return c;
 }
 
