@@ -38,6 +38,7 @@ void arena_deinit(struct arena *arena)
 
     arena->allocated = 0;
     arena->pos = 0;
+    arena->count = 0;
     arena->data = NULL;
     arena->next = NULL;
 }
@@ -48,6 +49,7 @@ void arena_reset(struct arena *arena)
         arena_reset(arena->next);
 
     arena->pos = 0;
+    arena->count = 0;
 }
 
 void *arena_alloc(struct arena *arena, size_t size)
@@ -70,6 +72,7 @@ void *arena_alloc(struct arena *arena, size_t size)
 
         void *data = ptr + arena->pos;
         arena->pos += size;
+        arena->count++;
         return data;
     }
 

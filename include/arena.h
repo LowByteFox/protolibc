@@ -5,14 +5,12 @@
 
 #include <stddef.h>
 
-/*
- * allocated - total allocation will be used for next chunk
- * pos - how much was allocated
- */
+__BEGIN_DECLS
+
 struct arena {
     struct arena *next;
     void *data;
-    size_t allocated, pos;
+    size_t allocated, pos, count;
 };
 
 struct arena arena_init(size_t size);
@@ -20,5 +18,7 @@ void arena_reset(struct arena *arena);
 void arena_deinit(struct arena *arena);
 
 void *arena_alloc(struct arena *arena, size_t size);
+
+__END_DECLS
 
 #endif

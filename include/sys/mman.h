@@ -27,6 +27,7 @@ __BEGIN_DECLS
 #define MAP_FAILED      ((void *) -1)
 
 void *mmap(void *addr, int len, int prot, int flags, int fd, int offset);
+int mprotect(void *addr, long len, int prot);
 int munmap(void *addr, int len);
 
 __END_DECLS

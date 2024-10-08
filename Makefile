@@ -4,7 +4,7 @@ CC = tcc
 AR = tcc -ar
 AS = tcc
 
-CFLAGS = -O2 -Iinclude
+CFLAGS = -g -O2 -Iinclude
 
 all: prepare start.o libc.a
 

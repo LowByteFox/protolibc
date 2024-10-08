@@ -1,113 +1,202 @@
-#warning Malloc not implemented
+#include <stddef.h>
+#include <stdbool.h>
+#include <arena.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
-#define PGSIZE		4096
-#define PGMASK		(PGSIZE - 1)
-#define MSETMAX		4096
-#define MSETLEN		(1 << 15)
+#define PGSIZE 4096
+#define align(x, align) (((x) + (align) - 1) & ~((align) - 1))
 
-/* placed at the beginning of regions for small allocations */
-struct mset {
-	int refs;	/* number of allocations */
-	int size;	/* remaining size */
+#define MEDIUM_SIZE 4096
+#define LARGE_SIZE  8192
+
+struct malloc_header {
+    ssize_t usable_size;
 };
 
-/* placed before each small allocation */
-struct mhdr {
-	int moff;	/* mset offset */
-	int size;	/* allocation size */
+struct huge_alloc {
+    struct huge_alloc *next;
+    size_t usable_size;
 };
 
-static struct mset *pool;
-static struct mset *pool1;	/* a freed pool */
+struct huge_alloc_pool {
+    struct huge_alloc *first;
+    struct huge_alloc *tail;
+    size_t size;
+};
 
-static int mk_pool(void)
+enum pools {
+    MEDIUM,
+    LARGE,
+    HUGE
+};
+
+/* context vars */
+static bool initialized = false;
+
+/* alloc pools */
+static struct arena medium_pool;
+static struct arena large_pool;
+static struct huge_alloc_pool huge_pool;
+
+/* functions */
+static void malloc_init();
+static bool is_pointer_valid(void *ptr);
+static void *find_free_block(size_t size, enum pools pool);
+
+void *malloc(size_t size)
 {
-	if ((pool == NULL || pool->refs > 0) && pool1 != NULL) {
-		pool = pool1;
-		pool1 = NULL;
-	}
-	if (pool != NULL && pool->refs == 0) {
-		pool->size = sizeof(*pool);
-		return 0;
-	}
-	pool = mmap(NULL, MSETLEN, PROT_READ | PROT_WRITE,
-				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (pool == MAP_FAILED) {
-		pool = NULL;
-		return 1;
-	}
-	pool->size = sizeof(*pool);
-	pool->refs = 0;
-	return 0;
+    if (!initialized)
+        malloc_init();
+
+    if (size < MEDIUM_SIZE) {
+        void *block = find_free_block(size, MEDIUM);
+        if (block == NULL)
+            return fastmalloc(size);
+        else
+            return block;
+    } else if (size < LARGE_SIZE) {
+        void *block = find_free_block(size, LARGE);
+        if (block == NULL)
+            return fastmalloc(size);
+        else
+            return block;
+    } else {
+        void *block = find_free_block(size, HUGE);
+    }
+
+    return NULL;
 }
 
-void *malloc(long n)
+void *fastmalloc(size_t size)
 {
-	void *m;
-	if (n >= MSETMAX) {
-		m = mmap(NULL, n + PGSIZE, PROT_READ | PROT_WRITE,
-				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-		if (m == MAP_FAILED)
-			return NULL;
-		*(long *) m = n + PGSIZE;	/* store length in the first page */
-		return m + PGSIZE;
-	}
-	if (!pool || pool->size + n + sizeof(struct mhdr) > MSETLEN)
-		if (mk_pool())
-			return NULL;
-	m = (void *) pool + pool->size;
-	((struct mhdr *) m)->moff = pool->size;
-	((struct mhdr *) m)->size = n;
-	pool->refs++;
-	pool->size += (n + sizeof(struct mhdr) + 7) & ~7;
-	if (!((unsigned long) (pool + pool->size + sizeof(struct mhdr)) & PGMASK))
-		pool->size += sizeof(long);
-	return m + sizeof(struct mhdr);
+    if (size < MEDIUM_SIZE) {
+        struct malloc_header head = {0};
+        size_t to_alloc = align(size + sizeof(head), 8);
+        head.usable_size = to_alloc - sizeof(head);
+
+        void *ptr = arena_alloc(&medium_pool, to_alloc);
+        void *off = ((uint8_t *) ptr) + sizeof(head);
+        *(struct malloc_header*) ptr = head;
+        return off;
+    } else if (size < LARGE_SIZE) {
+        struct malloc_header head = {0};
+        size_t to_alloc = align(size + sizeof(head), 8);
+        head.usable_size = to_alloc - sizeof(head);
+
+        void *ptr = arena_alloc(&large_pool, to_alloc);
+        void *off = ((uint8_t *) ptr) + sizeof(head);
+        *(struct malloc_header*) ptr = head;
+        return off;
+    } else {
+        void *block = find_free_block(size, HUGE);
+    }
+
+    return NULL;
 }
 
-void free(void *v)
+size_t malloc_usable_size(void *ptr)
 {
-	if (!v)
-		return;
-	if ((unsigned long) v & PGMASK) {
-		struct mhdr *mhdr = v - sizeof(struct mhdr);
-		struct mset *mset = (void *) mhdr - mhdr->moff;
-		mset->refs--;
-		if (mset->refs == 0 && mset != pool) {
-			if (pool1 != NULL)
-				munmap(mset, MSETLEN);
-			else
-				pool1 = mset;
-		}
-	} else {
-		munmap(v - PGSIZE, *(long *) (v - PGSIZE));
-	}
+    if (!initialized)
+        malloc_init();
+
+    if (!is_pointer_valid(ptr)) {
+        /* TODO: finish implementation of invalid pointer */
+        return 0;
+    }
+    
+    void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
+    struct malloc_header *header = base;
+    if (header->usable_size < 0)
+        return 0;
+
+    return header->usable_size;
 }
 
-void *calloc(long n, long sz)
+void free(void *ptr)
 {
-	void *r = malloc(n * sz);
-	if (r)
-		memset(r, 0, n * sz);
-	return r;
+    if (!initialized)
+        malloc_init();
+
+    if (!is_pointer_valid(ptr)) {
+        /* TODO: finish implementation of invalid pointer */
+        return;
+    }
+
+    void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
+    struct malloc_header *header = base;
+    if (header->usable_size < 0) {
+        /* TODO: double free ! */
+        fprintf(stderr, "free(): double free detected!\n");
+        abort();
+    }
+    header->usable_size = -header->usable_size;
 }
 
-static long msize(void *v)
+/* TODO: Finish init */
+static void malloc_init()
 {
-	if ((unsigned long) v & PGMASK)
-		return ((struct mhdr *) (v - sizeof(*v)))->size;
-	return *(long *) (v - PGSIZE);
+    medium_pool = arena_init(MEDIUM_SIZE * 1024); // 4 MB
+    large_pool = arena_init(LARGE_SIZE * 2048); // 16 MB
+
+    initialized = true;
 }
 
-void *realloc(void *v, long sz)
+static bool is_pointer_valid(void *ptr)
 {
-	void *r = malloc(sz);
-	if (r && v) {
-		memcpy(r, v, msize(v));
-		free(v);
-	}
-	return r;
+    struct arena *arenas[2] = {&medium_pool, &large_pool};
+    for (int i = 0; i < 2; i++) {
+        struct arena *iter = arenas[i];
+        for (; iter != NULL; iter = iter->next) {
+            uint8_t *adj = iter->data;
+            adj += iter->allocated;
+
+            /* WARN: Header should be checked too */
+            if (ptr >= iter->data && ptr < (void*) adj)
+                return true;
+        }
+    }
+
+    /* TODO: check through huge allocations */
+
+    return false;
+}
+
+/* TODO: Find block */
+static void *find_free_block(size_t size, enum pools pool)
+{
+    uint8_t *adj = NULL;
+    struct arena *iter = NULL;
+
+    switch (pool) {
+    case MEDIUM:
+        iter = &medium_pool;
+    case LARGE: /* FALLTHROUGH as both medium and large pools are arenas */
+        if (iter == NULL)
+            iter = &large_pool;
+
+        for (; iter != NULL; iter = iter->next) {
+            adj = iter->data;
+            for (int i = iter->count; i > 0; i--) {
+                struct malloc_header *header = (void*) adj;
+                adj += sizeof(struct malloc_header);
+                ssize_t prev_size = -header->usable_size;
+
+                if (prev_size > 0) {
+                    if (size <= prev_size)
+                        return adj;
+                    adj += prev_size;
+                    continue;
+                }
+                adj += header->usable_size;
+            }
+        }
+        break;
+    case HUGE:
+        break;
+    }
+    return NULL;
 }
