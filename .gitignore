@@ -1,5 +1,7 @@
 *.a
 *.o
-arch/amd64/syscall.s
+.clangd
 a.out
+arch/amd64/syscall.s
 syscall2gen
+test.c

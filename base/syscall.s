@@ -19,8 +19,8 @@ _exit:
 	jmp	__syscall
 
 # INFO: Not sure what to do with this
-.global brk
-brk:
+.global __brk
+__brk:
 	mov	$12, %eax
 	jmp	__syscall
 

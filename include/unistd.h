@@ -1,4 +1,6 @@
+#include <inttypes.h>
 #include <sys/cdefs.h>
+#include <sys/types.h>
 
 #ifndef _UNISTD_H_
 #define _UNISTD_H_
@@ -6,6 +8,9 @@
 __BEGIN_DECLS
 
 #include <stddef.h>
+
+int brk(void *addr);
+void *sbrk(intptr_t inc);
 
 /* access() flags */
 #define R_OK		4
@@ -20,7 +25,7 @@ extern char **environ;
 
 int isatty(int fd);
 int close(int fd);
-long write(int fd, void *buf, long n);
+long write(int fd, const void *buf, long n);
 long read(int fd, void *buf, long n);
 
 /* lseek() whence */
@@ -37,6 +42,8 @@ int dup2(int fd, int fd2);
 int fork(void);
 int getpid(void);
 int getppid(void);
+gid_t getgid(void);
+uid_t getuid(void);
 
 int execve(char *path, char *argv[], char *envp[]);
 int execle(char *path, ...);

@@ -55,6 +55,34 @@ int execvp(char *cmd, char *argv[])
 	return -1;
 }
 
+void *__brk(void *);
+
+static void *__current = 0;
+
+int brk(void *addr)
+{
+    __brk(addr);
+    __current = addr;
+    return 0;
+}
+
+void *sbrk(intptr_t inc) {
+    if (__current == NULL) {
+        __current = __brk(0);
+    }
+
+    if (inc == 0)
+        return __current;
+
+    uint8_t *addr = __current;
+
+    brk(addr += inc);
+
+    __current = addr;
+
+    return __current;
+}
+
 int execv(char *path, char *argv[])
 {
 	return execve(path, argv, environ);

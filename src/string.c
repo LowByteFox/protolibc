@@ -124,8 +124,8 @@ char *strrchr(char *s, int c) {
     return last;
 }
 
-long strlen(char *s) {
-    long length = 0;
+size_t strlen(const char *s) {
+    size_t length = 0;
     while (*s != '\0') {
         length++;
         s++;

@@ -1,3 +1,4 @@
+#warning Malloc not implemented
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
