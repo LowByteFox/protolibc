@@ -1,30 +1,34 @@
+# Config
 TARGET = amd64
 PREFIX = /usr/local
 CC = tcc
 AR = tcc -ar
 AS = tcc
-
 CFLAGS = -g -O2 -Iinclude
 
-all: prepare start.o libc.a
+# Build spec
+OBJS = src/__libc_start_main.o src/assert.o src/atoi.o src/ctype.o			 \
+	src/dirent.o src/errno.o src/isatty.o src/localtime.o src/mkstemp.o		 \
+	src/pledge.o src/qsort.o src/rand.o src/regex.o src/scanf.o src/signal.o \
+	src/stdarg.o src/stdio.o src/stdlib.o src/strftime.o src/stringc.o		 \
+	src/termios.o src/string.o src/unistd.o src/arena.o src/malloc.o		 \
+	arch/$(TARGET)/bits.o arch/$(TARGET)/lmem.o arch/$(TARGET)/setjmp.o		 \
+	arch/$(TARGET)/syscall.o
 
-prepare:
-	cp base/syscall.s arch/$(TARGET)/syscall.s
-	$(CC) -g syscall2gen.c -o syscall2gen
-	./syscall2gen $(TARGET)
-
-%.o: %.s
-	$(AS) -c $^ -o $@
-%.o: %.c
-	$(CC) -c $(CFLAGS) $^ -o $@
-
-OBJS1 = $(patsubst %.c,%.o,$(wildcard src/*.c))
-OBJS2 = $(patsubst %.s,%.o,$(wildcard arch/$(TARGET)/*.s))
+all: arch/$(TARGET)/syscall.s libc.a start.o
 
 start.o: arch/$(TARGET)/start.o
-	ln arch/$(TARGET)/start.o start.o
-libc.a: $(OBJS1) $(OBJS2) arch/$(TARGET)/syscall.o
-	$(AR) rcs $@ $(OBJS1) $(filter-out arch/$(TARGET)/start.o, $(OBJS2))
+	ln $? $@
+
+libc.a: $(OBJS)
+	$(AR) rcs $@ $?
+
+syscall2gen: syscall2gen.c
+	$(CC) syscall2gen.c -o syscall2gen
+
+arch/$(TARGET)/syscall.s: base/syscall.s syscall2gen
+	cp base/syscall.s arch/$(TARGET)/syscall.s
+	./syscall2gen $(TARGET)
 
 INLIB = $(DESTDIR)$(PREFIX)/lib
 ININC = $(DESTDIR)$(PREFIX)/include
@@ -44,6 +48,13 @@ uninstall:
 	done
 
 clean:
-	rm -f $(OBJS1) syscall2gen start.o *.a $(OBJS2) arch/$(TARGET)/syscall.o
+	rm -f $(OBJS) libc.a start.o syscall2gen
 
-.PHONY = all install uninstall clean
+.s.o:
+	$(AS) -c $< -o $@
+
+.c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
+
+.PHONY: all clean install uninstall
+.SUFFIXES: .c .s
