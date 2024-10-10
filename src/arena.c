@@ -13,9 +13,7 @@ struct arena arena_init(size_t size)
 {
     struct arena a = { 0 };
 
-    size_t aligned = align(size, PGSIZE);
-    if (aligned - size < sizeof(a))
-        aligned = align(aligned + sizeof(a), PGSIZE);
+    size_t aligned = align(size + sizeof(a), PGSIZE);
 
     a.data = mmap(NULL, aligned, PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

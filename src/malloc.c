@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -17,15 +18,19 @@ struct malloc_header {
     ssize_t usable_size;
 };
 
-struct huge_alloc {
-    struct huge_alloc *next;
-    size_t usable_size;
+struct huge_alloc_list {
+    struct malloc_header *prev;
+    struct malloc_header *next;
+};
+
+struct alloc_pool {
+    struct arena arena;
+    struct arena *tail;
 };
 
 struct huge_alloc_pool {
-    struct huge_alloc *first;
-    struct huge_alloc *tail;
-    size_t size;
+    struct malloc_header *first;
+    struct malloc_header *tail;
 };
 
 enum pools {
@@ -38,14 +43,20 @@ enum pools {
 static bool initialized = false;
 
 /* alloc pools */
-static struct arena medium_pool;
-static struct arena large_pool;
+static struct alloc_pool medium_pool;
+static struct alloc_pool large_pool;
 static struct huge_alloc_pool huge_pool;
 
 /* functions */
 static void malloc_init();
+static void update_tail(struct alloc_pool *pool);
 static bool is_pointer_valid(void *ptr);
 static void *find_free_block(size_t size, enum pools pool);
+
+/* huge allocations helper functions */
+static void *huge_alloc(size_t size);
+static struct huge_alloc_list *get_list(struct malloc_header *header);
+static void huge_alloc_rm(struct malloc_header *header);
 
 void *malloc(size_t size)
 {
@@ -62,10 +73,10 @@ void *malloc(size_t size)
         void *block = find_free_block(size, LARGE);
         if (block == NULL)
             return fastmalloc(size);
-        else
+        else 
             return block;
     } else {
-        void *block = find_free_block(size, HUGE);
+        return fastmalloc(size);
     }
 
     return NULL;
@@ -78,21 +89,25 @@ void *fastmalloc(size_t size)
         size_t to_alloc = align(size + sizeof(head), 8);
         head.usable_size = to_alloc - sizeof(head);
 
-        void *ptr = arena_alloc(&medium_pool, to_alloc);
+        void *ptr = arena_alloc(medium_pool.tail, to_alloc);
         void *off = ((uint8_t *) ptr) + sizeof(head);
         *(struct malloc_header*) ptr = head;
+
+        update_tail(&medium_pool);
         return off;
     } else if (size < LARGE_SIZE) {
         struct malloc_header head = {0};
         size_t to_alloc = align(size + sizeof(head), 8);
         head.usable_size = to_alloc - sizeof(head);
 
-        void *ptr = arena_alloc(&large_pool, to_alloc);
+        void *ptr = arena_alloc(large_pool.tail, to_alloc);
         void *off = ((uint8_t *) ptr) + sizeof(head);
         *(struct malloc_header*) ptr = head;
+
+        update_tail(&large_pool);
         return off;
     } else {
-        void *block = find_free_block(size, HUGE);
+        return huge_alloc(size);
     }
 
     return NULL;
@@ -123,7 +138,8 @@ void free(void *ptr)
 
     if (!is_pointer_valid(ptr)) {
         /* TODO: finish implementation of invalid pointer */
-        return;
+        fprintf(stderr, "free(): invalid pointer!\n");
+        abort();
     }
 
     void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
@@ -133,39 +149,56 @@ void free(void *ptr)
         fprintf(stderr, "free(): double free detected!\n");
         abort();
     }
-    header->usable_size = -header->usable_size;
+    if (header->usable_size >= LARGE_SIZE) {
+        huge_alloc_rm(header);
+        munmap(header, header->usable_size + sizeof(*header) +
+            sizeof(struct huge_alloc_list));
+    } else
+        header->usable_size = -header->usable_size;
 }
 
-/* TODO: Finish init */
+/* TODO: MALLOC_OPTIONS */
 static void malloc_init()
 {
-    medium_pool = arena_init(MEDIUM_SIZE * 1024); // 4 MB
-    large_pool = arena_init(LARGE_SIZE * 2048); // 16 MB
+    medium_pool.arena = arena_init(MEDIUM_SIZE * 1024); // 4 MB
+    medium_pool.tail = &medium_pool.arena;
+    large_pool.arena = arena_init(LARGE_SIZE * 2048); // 16 MB
+    large_pool.tail = &large_pool.arena;
+
+    huge_pool.first = 0;
+    huge_pool.tail = 0;
 
     initialized = true;
 }
 
 static bool is_pointer_valid(void *ptr)
 {
-    struct arena *arenas[2] = {&medium_pool, &large_pool};
+    struct arena *arenas[2] = {&medium_pool.arena, &large_pool.arena};
     for (int i = 0; i < 2; i++) {
         struct arena *iter = arenas[i];
         for (; iter != NULL; iter = iter->next) {
             uint8_t *adj = iter->data;
             adj += iter->allocated;
 
-            /* WARN: Header should be checked too */
-            if (ptr >= iter->data && ptr < (void*) adj)
+            if (ptr >= (void*) iter && ptr < (void*) adj)
                 return true;
         }
     }
 
-    /* TODO: check through huge allocations */
+    struct malloc_header *iter = huge_pool.first;
+    while (iter != NULL) {
+        uint8_t *adj = (void*) iter;
+        adj += iter->usable_size;
+
+        if (ptr >= (void*) iter && ptr < (void*) adj)
+            return true;
+
+        iter = get_list(iter)->next;
+    }
 
     return false;
 }
 
-/* TODO: Find block */
 static void *find_free_block(size_t size, enum pools pool)
 {
     uint8_t *adj = NULL;
@@ -173,10 +206,10 @@ static void *find_free_block(size_t size, enum pools pool)
 
     switch (pool) {
     case MEDIUM:
-        iter = &medium_pool;
+        iter = &medium_pool.arena;
     case LARGE: /* FALLTHROUGH as both medium and large pools are arenas */
         if (iter == NULL)
-            iter = &large_pool;
+            iter = &large_pool.arena;
 
         for (; iter != NULL; iter = iter->next) {
             adj = iter->data;
@@ -186,8 +219,11 @@ static void *find_free_block(size_t size, enum pools pool)
                 ssize_t prev_size = -header->usable_size;
 
                 if (prev_size > 0) {
-                    if (size <= prev_size)
+                    if (size <= prev_size) {
+                        /* flag the block as used */
+                        header->usable_size = -header->usable_size;
                         return adj;
+                    }
                     adj += prev_size;
                     continue;
                 }
@@ -195,8 +231,89 @@ static void *find_free_block(size_t size, enum pools pool)
             }
         }
         break;
-    case HUGE:
+    case HUGE: /* There won't be free blocks */
         break;
     }
     return NULL;
+}
+
+static void update_tail(struct alloc_pool *pool)
+{
+    while (pool->tail->next != NULL)
+        pool->tail = pool->tail->next;
+}
+
+static void *huge_alloc(size_t size)
+{
+    struct malloc_header head = {0};
+    size_t to_alloc = align(size + sizeof(head) +
+        sizeof(struct huge_alloc_list), PGSIZE);
+
+    head.usable_size = to_alloc - sizeof(head) -
+        sizeof(struct huge_alloc_list);
+
+    void *ptr = mmap(NULL, to_alloc, PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    *(struct malloc_header*) ptr = head;
+    uint8_t *adj = ptr;
+    adj += sizeof(head);
+    adj += head.usable_size;
+    memset(adj, 0, sizeof(struct huge_alloc_list));
+
+    if (huge_pool.first == NULL) {
+        huge_pool.first = ptr;
+        huge_pool.tail = ptr;
+    } else {
+        struct huge_alloc_list *list = get_list(ptr);
+        struct huge_alloc_list *prev = get_list(huge_pool.tail);
+
+        list->prev = huge_pool.tail;
+        prev->next = ptr;
+        huge_pool.tail = ptr;
+    }
+
+    return ((uint8_t*) ptr) + sizeof(head);
+}
+
+static struct huge_alloc_list *get_list(struct malloc_header *header)
+{
+    uint8_t *adj = (void*) header;
+    adj += sizeof(*header);
+    adj += header->usable_size;
+    return (struct huge_alloc_list*) adj;
+}
+
+static void huge_alloc_rm(struct malloc_header *header)
+{
+    struct huge_alloc_list *list = get_list(header);
+
+    /* last one in list */
+    if (list->prev == NULL && list->next == NULL) {
+        huge_pool.first = 0;
+        huge_pool.tail = 0;
+        return;
+    }
+
+    /* pop front */
+    if (list->prev == NULL) {
+        struct huge_alloc_list *next = get_list(list->next);
+        huge_pool.first = list->next;
+        next->prev = NULL;
+        return;
+    }
+
+    /* pop back */
+    if (list->next == NULL) {
+        struct huge_alloc_list *prev = get_list(list->prev);
+        prev->next = NULL;
+        huge_pool.tail = list->prev;
+        return;
+    }
+
+    struct huge_alloc_list *next = get_list(list->next);
+    struct huge_alloc_list *prev = get_list(list->prev);
+
+    prev->next = list->next;
+    next->prev = list->prev;
 }

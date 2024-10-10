@@ -21,7 +21,7 @@ start.o: arch/$(TARGET)/start.o
 	ln $? $@
 
 libc.a: $(OBJS)
-	$(AR) rcs $@ $?
+	$(AR) rcs $@ $(OBJS)
 
 syscall2gen: syscall2gen.c
 	$(CC) syscall2gen.c -o syscall2gen
