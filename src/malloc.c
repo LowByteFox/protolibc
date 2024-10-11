@@ -262,6 +262,65 @@ void *fastrealloc(void *ptr, size_t new_size)
     return new;
 }
 
+void *calloc(size_t nmemb, size_t size)
+{
+    size_t total = nmemb * size;
+    void *ptr = malloc(total);
+
+    if (ptr == NULL)
+        return NULL;
+
+    memset(ptr, 0, total);
+    return ptr;
+}
+
+void *fastcalloc(size_t nmemb, size_t size)
+{
+    size_t total = nmemb * size;
+    void *ptr = fastmalloc(total);
+
+    if (ptr == NULL)
+        return NULL;
+
+    memset(ptr, 0, total);
+    return ptr;
+}
+
+void *reallocarray(void *ptr, size_t nmemb, size_t size)
+{
+    return realloc(ptr, nmemb * size);
+}
+
+void *recallocarray(void *ptr, size_t oldnmemb, size_t nmemb, size_t size)
+{
+    if (ptr == NULL)
+        return calloc(nmemb, size);
+
+    size_t total = nmemb * size;
+    void *new = realloc(ptr, total);
+
+    if (new == NULL)
+        return NULL;
+
+    uint8_t *adj = new;
+    new += oldnmemb * size;
+
+    memset(adj, 0, total - oldnmemb * size);
+
+    return adj;
+}
+
+void freezero(void *ptr, size_t size)
+{
+    if (!is_pointer_valid(ptr)) {
+        fprintf(stderr, "freezero(): invalid pointer!\n");
+        abort();
+    }
+
+    memset(ptr, 0, size);
+    free(ptr);
+}
+
 /* TODO: MALLOC_OPTIONS */
 static void malloc_init()
 {

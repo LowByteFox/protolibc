@@ -12,14 +12,17 @@ void *malloc(size_t size);
 void *fastmalloc(size_t size);
 size_t malloc_usable_size(void *ptr);
 
+void *calloc(size_t nmemb, size_t size);
+void *fastcalloc(size_t nmemb, size_t size);
+
 void *realloc(void *ptr, size_t new_size);
 void *fastrealloc(void *ptr, size_t new_size);
+void *reallocarray(void *ptr, size_t nmemb, size_t size);
+void *recallocarray(void *ptr, size_t oldnmemb, size_t nmemb, size_t size);
 
 void free(void *ptr);
+void freezero(void *ptr, size_t size);
 void fastfree(void *ptr);
-
-void *calloc(size_t n, size_t sz);
-void *realloc(void *v, size_t sz);
 
 int atoi(char *s);
 long atol(char *s);
