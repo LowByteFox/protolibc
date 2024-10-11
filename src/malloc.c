@@ -41,6 +41,7 @@ enum pools {
 
 /* context vars */
 static bool initialized = false;
+static struct arena *found_arena = NULL;
 
 /* alloc pools */
 static struct alloc_pool medium_pool;
@@ -62,6 +63,15 @@ void *malloc(size_t size)
 {
     if (!initialized)
         malloc_init();
+
+    ssize_t size_check = size;
+    if (size_check < 0) {
+        fprintf(stderr, "malloc(): invalid size\n");
+        abort();
+    }
+
+    if (size == 0)
+        return NULL;
 
     if (size < MEDIUM_SIZE) {
         void *block = find_free_block(size, MEDIUM);
@@ -136,12 +146,19 @@ void free(void *ptr)
     if (!initialized)
         malloc_init();
 
+    if (ptr == NULL)
+        return;
+
     if (!is_pointer_valid(ptr)) {
         /* TODO: finish implementation of invalid pointer */
         fprintf(stderr, "free(): invalid pointer!\n");
         abort();
     }
 
+    fastfree(ptr);
+}
+
+void fastfree(void *ptr) {
     void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
     struct malloc_header *header = base;
     if (header->usable_size < 0) {
@@ -155,6 +172,94 @@ void free(void *ptr)
             sizeof(struct huge_alloc_list));
     } else
         header->usable_size = -header->usable_size;
+}
+
+void *realloc(void *ptr, size_t new_size)
+{
+    if (!initialized)
+        malloc_init();
+
+    ssize_t size_check = new_size;
+    if (size_check < 0) {
+        fprintf(stderr, "realloc(): invalid size\n");
+        abort();
+    }
+
+    if (new_size == 0)
+        return NULL;
+
+    if (ptr == NULL)
+        return malloc(new_size);
+
+    if (!is_pointer_valid(ptr)) {
+        /* TODO: finish implementation of invalid pointer */
+        fprintf(stderr, "realloc(): invalid pointer!\n");
+        abort();
+    }
+
+    void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
+    struct malloc_header *header = base;
+
+    if (header->usable_size < MEDIUM_SIZE || header->usable_size < LARGE_SIZE) {
+        size_t old_alloc_size = header->usable_size + sizeof(*header);
+
+        uint8_t *adj = found_arena->data;
+        adj += found_arena->pos - old_alloc_size;
+
+        /* last allocation detected */
+        if (adj == (void*) header) {
+            size_t to_alloc = align(new_size + sizeof(*header), 8);
+            size_t space_left = found_arena->allocated - found_arena->pos;
+
+            if (to_alloc - old_alloc_size <= space_left) {
+                /* can expand */
+                found_arena->pos += to_alloc - old_alloc_size;
+                return ptr;
+            } else {
+                /* cannot expand */
+                void *new = fastmalloc(new_size);
+                memcpy(new, ptr, header->usable_size);
+                fastfree(ptr);
+
+                return new;
+            }
+        } else {
+            void *new = fastmalloc(new_size);
+            memcpy(new, ptr, header->usable_size);
+            fastfree(ptr);
+
+            return new;
+        }
+    } else {
+        void *new = fastmalloc(new_size);
+        memcpy(new, ptr, header->usable_size);
+        fastfree(ptr);
+
+        return new;
+    }
+
+    return NULL;
+}
+
+void *fastrealloc(void *ptr, size_t new_size)
+{
+    ssize_t size_check = new_size;
+    if (size_check < 0) {
+        fprintf(stderr, "realloc(): invalid size\n");
+        abort();
+    }
+
+    if (new_size == 0)
+        return NULL;
+
+    void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
+    struct malloc_header *header = base;
+
+    void *new = fastmalloc(new_size);
+    memcpy(new, ptr, header->usable_size);
+    fastfree(ptr);
+
+    return new;
 }
 
 /* TODO: MALLOC_OPTIONS */
@@ -173,6 +278,7 @@ static void malloc_init()
 
 static bool is_pointer_valid(void *ptr)
 {
+    found_arena = NULL;
     struct arena *arenas[2] = {&medium_pool.arena, &large_pool.arena};
     for (int i = 0; i < 2; i++) {
         struct arena *iter = arenas[i];
@@ -180,8 +286,10 @@ static bool is_pointer_valid(void *ptr)
             uint8_t *adj = iter->data;
             adj += iter->allocated;
 
-            if (ptr >= (void*) iter && ptr < (void*) adj)
+            if (ptr >= (void*) iter && ptr < (void*) adj) {
+                found_arena = iter;
                 return true;
+            }
         }
     }
 

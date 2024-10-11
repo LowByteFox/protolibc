@@ -8,11 +8,16 @@ __BEGIN_DECLS
 
 #define RAND_MAX		0x7fffffff
 
-void *malloc(size_t n);
-void *fastmalloc(size_t n);
+void *malloc(size_t size);
+void *fastmalloc(size_t size);
 size_t malloc_usable_size(void *ptr);
 
-void free(void *m);
+void *realloc(void *ptr, size_t new_size);
+void *fastrealloc(void *ptr, size_t new_size);
+
+void free(void *ptr);
+void fastfree(void *ptr);
+
 void *calloc(size_t n, size_t sz);
 void *realloc(void *v, size_t sz);
 

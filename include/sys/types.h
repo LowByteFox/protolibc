@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <sys/cdefs.h>
 
 #ifndef _SYS_TYPES_H_
@@ -14,7 +15,7 @@ typedef uint16_t nlink_t;
 typedef uint16_t uid_t;
 
 typedef int32_t pid_t;
-typedef long ssize_t;
+typedef int64_t ssize_t;
 typedef long time_t;
 typedef long useconds_t;
 

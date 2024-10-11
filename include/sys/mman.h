@@ -1,4 +1,6 @@
+#include <stddef.h>
 #include <sys/cdefs.h>
+#include <sys/types.h>
 
 #ifndef _SYS_MMAN_H_
 #define _SYS_MMAN_H_
@@ -26,9 +28,9 @@ __BEGIN_DECLS
 
 #define MAP_FAILED      ((void *) -1)
 
-void *mmap(void *addr, int len, int prot, int flags, int fd, int offset);
+void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset);
 int mprotect(void *addr, long len, int prot);
-int munmap(void *addr, int len);
+int munmap(void *addr, size_t len);
 
 __END_DECLS
 
