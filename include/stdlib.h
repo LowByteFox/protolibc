@@ -8,6 +8,8 @@ __BEGIN_DECLS
 
 #define RAND_MAX		0x7fffffff
 
+extern const char *malloc_options;
+
 void *malloc(size_t size);
 void *fastmalloc(size_t size);
 size_t malloc_usable_size(void *ptr);
@@ -22,7 +24,6 @@ void *recallocarray(void *ptr, size_t oldnmemb, size_t nmemb, size_t size);
 
 void free(void *ptr);
 void freezero(void *ptr, size_t size);
-void fastfree(void *ptr);
 
 int atoi(char *s);
 long atol(char *s);

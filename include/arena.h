@@ -10,8 +10,14 @@ __BEGIN_DECLS
 struct arena {
     struct arena *next;
     void *data;
-    size_t allocated, pos, count;
+    size_t allocated, final_allocated, pos, count;
 };
+
+/*
+ * difference between allocated and final_allocated is that final_allocated
+ * must not change! you can decrease and increase the value of allocated to
+ * add your own context data BUT it MUST NEVER be higher than final_allocated
+ */
 
 struct arena arena_init(size_t size);
 void arena_reset(struct arena *arena);

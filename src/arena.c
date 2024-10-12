@@ -23,6 +23,7 @@ struct arena arena_init(size_t size)
     }
 
     a.allocated = aligned - sizeof(a); /* just so it fits at the end */
+    a.final_allocated = a.allocated;
 
     return a;
 }
@@ -32,9 +33,10 @@ void arena_deinit(struct arena *arena)
     if (arena->next != NULL)
         arena_deinit(arena->next);
 
-    munmap(arena->data, arena->allocated + sizeof(*arena));
+    munmap(arena->data, arena->final_allocated + sizeof(*arena));
 
     arena->allocated = 0;
+    arena->final_allocated = 0;
     arena->pos = 0;
     arena->count = 0;
     arena->data = NULL;
@@ -63,8 +65,11 @@ void *arena_alloc(struct arena *arena, size_t size)
             if (arena->next != NULL)
                 return arena_alloc(arena->next, size);
 
-            arena->next = (void*) ptr + arena->allocated;
-            *(arena->next) = arena_init(arena->allocated);
+            arena->next = (void*) ptr + arena->final_allocated;
+            *(arena->next) = arena_init(arena->final_allocated);
+            if (arena->next == NULL)
+                return NULL;
+
             return arena_alloc(arena->next, size);
         }
 
