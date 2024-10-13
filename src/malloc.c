@@ -13,6 +13,7 @@
 /* WARN: malloc needs to be thread-safe, implement after threads! */
 
 #define JUNK_VALUE 0xAA
+#define CANARY_SIZE 128
 
 #define PGSIZE 4096
 #define align(x, align) (((x) + (align) - 1) & ~((align) - 1))
@@ -77,6 +78,7 @@ static void *free_list_get(struct arena *arena);
 /* functions */
 static void malloc_warn(const char *fmt, ...);
 static void malloc_err(const char *fmt, ...);
+static void check_canary(void *ptr);
 static void fastfree(void *ptr);
 static void dump_memory_info();
 static void malloc_init();
@@ -162,6 +164,11 @@ void *fastmalloc(size_t size)
 
     if (size < MEDIUM_SIZE) {
         struct malloc_header head = {0};
+
+        /* a canary is part of the allocation */
+        if (alloc_flags & CANARIES)
+            size += CANARY_SIZE;
+
         size_t to_alloc = align(size + sizeof(head), 8);
         head.usable_size = to_alloc - sizeof(head);
 
@@ -169,6 +176,12 @@ void *fastmalloc(size_t size)
         medium_pool.tail->allocated -= sizeof(void*);
 
         void *ptr = arena_alloc(medium_pool.tail, to_alloc);
+
+        /* don't let the user know */
+        if (alloc_flags & CANARIES) {
+            head.usable_size -= CANARY_SIZE;
+            size -= CANARY_SIZE;
+        }
 
         if (ptr == NULL && alloc_flags & XMALLOC)
             malloc_err("malloc(): Out Of Memory");
@@ -195,6 +208,9 @@ void *fastmalloc(size_t size)
         if (alloc_flags & JUNKING)
             memset(off, JUNK_VALUE, size);
 
+        if (alloc_flags & CANARIES)
+            memset(off + size, 0, CANARY_SIZE);
+
         if (alloc_flags & VERBOSE)
             malloc_warn("malloc(%ld) at arena %p = %p\n",
                 head.usable_size, medium_pool.tail, ptr);
@@ -202,12 +218,21 @@ void *fastmalloc(size_t size)
         return off;
     } else if (size < LARGE_SIZE) {
         struct malloc_header head = {0};
+
+        if (alloc_flags & CANARIES)
+            size += CANARY_SIZE;
+
         size_t to_alloc = align(size + sizeof(head), 8);
         head.usable_size = to_alloc - sizeof(head);
 
         large_pool.tail->allocated -= sizeof(void*);
 
         void *ptr = arena_alloc(large_pool.tail, to_alloc);
+
+        if (alloc_flags & CANARIES) {
+            head.usable_size -= CANARY_SIZE;
+            size -= CANARY_SIZE;
+        }
 
         if (ptr == NULL && alloc_flags & XMALLOC)
             malloc_err("malloc(): Out Of Memory");
@@ -229,6 +254,9 @@ void *fastmalloc(size_t size)
 
         if (alloc_flags & JUNKING)
             memset(off, JUNK_VALUE, size);
+
+        if (alloc_flags & CANARIES)
+            memset(off + size, 0, CANARY_SIZE);
 
         if (alloc_flags & VERBOSE)
             malloc_warn("malloc(%ld) at arena %p = %p\n",
@@ -297,7 +325,14 @@ static void fastfree(void *ptr) {
         munmap(header, header->usable_size + sizeof(*header) +
             sizeof(struct huge_alloc_list));
     } else {
+        /* check canary */
+        if (alloc_flags & CANARIES) {
+            base += sizeof(struct malloc_header) + header->usable_size;
+            check_canary(base);
+        }
+
         header->usable_size = -header->usable_size;
+
 
         /*
          * while there is free list, just to quickly detect double free
@@ -350,6 +385,10 @@ void *realloc(void *ptr, size_t new_size)
 
         /* last allocation detected */
         if (adj == (void*) header) {
+
+            if (alloc_flags & CANARIES)
+                new_size += CANARY_SIZE;
+
             size_t to_alloc = align(new_size + sizeof(*header), 8);
             size_t space_left = found_arena->allocated - found_arena->pos;
 
@@ -357,6 +396,17 @@ void *realloc(void *ptr, size_t new_size)
                 /* can expand */
                 found_arena->pos += to_alloc - old_alloc_size;
                 header->usable_size = to_alloc - sizeof(*header);
+
+                if (alloc_flags & CANARIES) {
+                    header->usable_size -= CANARY_SIZE;
+                    new_size -= CANARY_SIZE;
+                }
+
+                if (alloc_flags & CANARIES) {
+                    base += sizeof(struct malloc_header) + header->usable_size;
+                    memset(base, 0, CANARY_SIZE);
+                }
+
                 if (alloc_flags & VERBOSE)
                     malloc_warn("realloc(%p) of size %ld to size %ld = %p\n",
                         ptr, old_alloc_size - sizeof(*header),
@@ -690,6 +740,10 @@ static void update_tail(struct alloc_pool *pool)
 static void *huge_alloc(size_t size)
 {
     struct malloc_header head = {0};
+
+    if (alloc_flags & CANARIES)
+        size += CANARY_SIZE;
+
     size_t to_alloc = align(size + sizeof(head) +
         sizeof(struct huge_alloc_list), PGSIZE);
 
@@ -698,6 +752,11 @@ static void *huge_alloc(size_t size)
 
     void *ptr = mmap(NULL, to_alloc, PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (alloc_flags & CANARIES) {
+        head.usable_size -= CANARY_SIZE;
+        size -= CANARY_SIZE;
+    }
 
     if (ptr == NULL && alloc_flags & XMALLOC)
         malloc_err("malloc(): Out Of Memory");
@@ -729,6 +788,13 @@ static void *huge_alloc(size_t size)
 
     if (alloc_flags & JUNKING)
         memset(off, JUNK_VALUE, size);
+
+    if (alloc_flags & CANARIES)
+        memset(off + size, 0, CANARY_SIZE);
+
+    if (alloc_flags & VERBOSE)
+        malloc_warn("malloc(%ld) at arena %p = %p\n",
+            head.usable_size, medium_pool.tail, ptr);
 
     return off;
 }
@@ -777,6 +843,15 @@ static void huge_alloc_rm(struct malloc_header *header)
 
     prev->next = list->next;
     next->prev = list->prev;
+}
+
+static void check_canary(void *ptr)
+{
+    uint8_t *iter = ptr;
+    for (int i = 0; i < CANARY_SIZE; i++, iter++) {
+        if (*iter != 0)
+            malloc_err("*** heap smashing detected ***: terminated\n");
+    }
 }
 
 static void init_free_list(struct arena *arena)

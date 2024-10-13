@@ -40,5 +40,3 @@ set of options:
 - J - "Junking", add junk value to newly allocated memory to indicate unused space
 - V - "Verbose", used for debug purposes, prints information to stderr
 - X - "Xmalloc", rather than return failure, abort() the program with a diagnostic message on stderr
-
-> `C` yet to be implemented
