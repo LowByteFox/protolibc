@@ -41,4 +41,4 @@ set of options:
 - V - "Verbose", used for debug purposes, prints information to stderr
 - X - "Xmalloc", rather than return failure, abort() the program with a diagnostic message on stderr
 
-> `C` and `F` yet to be implemented
+> `C`, `MALLOC_OPTIONS` and `/etc/malloc.conf` yet to be implemented

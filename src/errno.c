@@ -36,6 +36,9 @@ char *sys_errlist[] = {
 	[EPIPE]		= "Broken pipe",
 	[EDOM]		= "Argument outside domain",
 	[ERANGE]	= "Result not representable",
+    [EINVSIZE]  = "Invalid size",
+    [EINVPTR]   = "Invalid pointer",
+    [EDBLFREE]  = "Double free",
 };
 
 int errno;

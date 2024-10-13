@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <arena.h>
@@ -116,8 +117,13 @@ void *malloc(size_t size)
         malloc_init();
 
     ssize_t size_check = size;
-    if (size_check < 0)
-        malloc_err("malloc(): invalid size");
+    if (size_check < 0) {
+        if (alloc_flags & FREECHECK) {
+            errno = EINVSIZE;
+            return NULL;
+        } else
+            malloc_err("malloc(): invalid size");
+    }
 
     if (size == 0)
         return NULL;
@@ -134,6 +140,10 @@ void *malloc(size_t size)
             return block;
     } else if (size < LARGE_SIZE) {
         void *block = find_free_block(size, LARGE);
+
+        if (block != NULL && alloc_flags & VERBOSE)
+            malloc_warn("find(%ld) = %p\n", size, block);
+
         if (block == NULL)
             return fastmalloc(size);
         else 
@@ -162,6 +172,11 @@ void *fastmalloc(size_t size)
 
         if (ptr == NULL && alloc_flags & XMALLOC)
             malloc_err("malloc(): Out Of Memory");
+
+        if (ptr == NULL && alloc_flags & FREECHECK) {
+            errno = ENOMEM;
+            return NULL;
+        }
 
         /* no need to lie */ 
         medium_pool.tail->allocated += sizeof(void*);
@@ -197,6 +212,11 @@ void *fastmalloc(size_t size)
         if (ptr == NULL && alloc_flags & XMALLOC)
             malloc_err("malloc(): Out Of Memory");
 
+        if (ptr == NULL && alloc_flags & FREECHECK) {
+            errno = ENOMEM;
+            return NULL;
+        }
+
         large_pool.tail->allocated += sizeof(void*);
 
         if (large_pool.tail->next != NULL)
@@ -228,7 +248,9 @@ size_t malloc_usable_size(void *ptr)
         malloc_init();
 
     if (!is_pointer_valid(ptr)) {
-        /* TODO: finish implementation of invalid pointer */
+        if (alloc_flags & FREECHECK)
+            errno = EINVPTR;
+
         return 0;
     }
     
@@ -248,8 +270,13 @@ void free(void *ptr)
     if (ptr == NULL)
         return;
 
-    if (!is_pointer_valid(ptr))
-        malloc_err("free(): invalid pointer");
+    if (!is_pointer_valid(ptr)) {
+        if (alloc_flags & FREECHECK) {
+            errno = EINVPTR;
+            return;
+        } else
+            malloc_err("free(): invalid pointer");
+    }
 
     fastfree(ptr);
 }
@@ -257,8 +284,13 @@ void free(void *ptr)
 static void fastfree(void *ptr) {
     void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
     struct malloc_header *header = base;
-    if (header->usable_size < 0) 
-        malloc_err("free(): double free detected");
+    if (header->usable_size < 0) {
+        if (alloc_flags & FREECHECK) {
+            errno = EDBLFREE;
+            return;
+        } else
+            malloc_err("free(): double free detected");
+    }
 
     if (header->usable_size >= LARGE_SIZE) {
         huge_alloc_rm(header);
@@ -285,8 +317,13 @@ void *realloc(void *ptr, size_t new_size)
         malloc_init();
 
     ssize_t size_check = new_size;
-    if (size_check < 0)
-        malloc_err("realloc(): invalid size");
+    if (size_check < 0) {
+        if (alloc_flags & FREECHECK) {
+            errno = EINVSIZE;
+            return NULL;
+        } else
+            malloc_err("realloc(): invalid size");
+    }
 
     if (new_size == 0)
         return NULL;
@@ -295,9 +332,11 @@ void *realloc(void *ptr, size_t new_size)
         return malloc(new_size);
 
     if (!is_pointer_valid(ptr)) {
-        /* TODO: finish implementation of invalid pointer */
-        fprintf(stderr, "realloc(): invalid pointer!\n");
-        abort();
+        if (alloc_flags & FREECHECK) {
+            errno = EINVPTR;
+            return NULL;
+        } else
+            malloc_err("realloc(): invalid pointer");
     }
 
     void *base = ((uint8_t*) ptr) - sizeof(struct malloc_header);
@@ -352,8 +391,13 @@ void *realloc(void *ptr, size_t new_size)
 void *fastrealloc(void *ptr, size_t new_size)
 {
     ssize_t size_check = new_size;
-    if (size_check < 0) 
-        malloc_err("realloc(): invalid size");
+    if (size_check < 0) {
+        if (alloc_flags & FREECHECK) {
+            errno = EINVSIZE;
+            return NULL;
+        } else
+            malloc_err("realloc(): invalid size");
+    }
 
     if (new_size == 0)
         return NULL;
@@ -370,9 +414,6 @@ void *fastrealloc(void *ptr, size_t new_size)
 
 void *calloc(size_t nmemb, size_t size)
 {
-    if (!initialized)
-        malloc_init();
-
     size_t total = nmemb * size;
     void *ptr = malloc(total);
 
@@ -385,9 +426,6 @@ void *calloc(size_t nmemb, size_t size)
 
 void *fastcalloc(size_t nmemb, size_t size)
 {
-    if (!initialized)
-        malloc_init();
-
     size_t total = nmemb * size;
     void *ptr = fastmalloc(total);
 
@@ -424,8 +462,16 @@ void *recallocarray(void *ptr, size_t oldnmemb, size_t nmemb, size_t size)
 
 void freezero(void *ptr, size_t size)
 {
-    if (!is_pointer_valid(ptr)) 
-        malloc_err("freezero(): invalid pointer");
+    if (!initialized)
+        malloc_init();
+
+    if (!is_pointer_valid(ptr)) {
+        if (alloc_flags & FREECHECK) {
+            errno = EINVPTR;
+            return;
+        } else
+            malloc_err("freezero(): invalid pointer");
+    }
 
     memset(ptr, 0, size);
     free(ptr);
@@ -639,6 +685,11 @@ static void *huge_alloc(size_t size)
     if (ptr == NULL && alloc_flags & XMALLOC)
         malloc_err("malloc(): Out Of Memory");
 
+    if (ptr == NULL && alloc_flags & FREECHECK) {
+        errno = ENOMEM;
+        return NULL;
+    }
+
     *(struct malloc_header*) ptr = head;
     uint8_t *adj = ptr;
     adj += sizeof(head);
@@ -683,6 +734,10 @@ static void huge_alloc_rm(struct malloc_header *header)
         huge_pool.tail = 0;
         return;
     }
+
+    if (alloc_flags & VERBOSE)
+        malloc_warn("free(%p) of size %ld at arena %p\n",
+            header, header->usable_size, found_arena);
 
     /* pop front */
     if (list->prev == NULL) {
