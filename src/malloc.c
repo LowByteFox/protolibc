@@ -492,14 +492,28 @@ static void malloc_init()
 
     initialized = true;
 
-    /* TODO: /etc/malloc.conf */
-
     bool registered = false;
+    char b[64] = {0};
+    const char *iter = NULL;
 
-    if (malloc_options == NULL)
+    int fd = open("/etc/malloc.conf", O_RDONLY);
+    if (fd != -1) {
+        int res = read(fd, b, 63);
+        if (res > 0)
+            iter = b;
+    }
+
+    close(fd);
+
+    const char *env = getenv("MALLOC_OPTIONS");
+    if (env != NULL)
+        iter = env;
+
+    if (malloc_options != NULL)
+        iter = malloc_options;
+
+    if (iter == NULL)
         return;
-
-    const char *iter = malloc_options;
 
     while (*iter) {
         switch (*iter) {
@@ -534,6 +548,9 @@ static void malloc_init()
             break;
         case 'X':
             alloc_flags |= XMALLOC;
+            break;
+        /* /etc/malloc.conf may end with a new line, ignore it */
+        case '\n':
             break;
         default:
             malloc_warn("malloc_options: unknown option '%c'\n", *iter);
