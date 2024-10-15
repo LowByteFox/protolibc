@@ -97,15 +97,15 @@ char *strcpy(char *dst, char *src) {
     return start;
 }
 
-char *strchr(char *s, int c) {
+char *strchr(const char *s, int c) {
     while (*s != '\0') {
         if (*s == c) {
-            return s;
+            return (char*) s;
         }
         s++;
     }
     if (c == '\0') {
-        return s;
+        return (char*) s;
     }
     return NULL;
 }

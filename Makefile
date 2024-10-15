@@ -12,6 +12,7 @@ OBJS = src/__libc_start_main.o src/assert.o src/atoi.o src/ctype.o			 \
 	src/pledge.o src/qsort.o src/rand.o src/regex.o src/scanf.o src/signal.o \
 	src/stdarg.o src/stdio.o src/stdlib.o src/strftime.o src/stringc.o		 \
 	src/termios.o src/string.o src/unistd.o src/arena.o src/malloc.o		 \
+	src/getopt.o \
 	arch/$(TARGET)/bits.o arch/$(TARGET)/lmem.o arch/$(TARGET)/setjmp.o		 \
 	arch/$(TARGET)/syscall.o
 

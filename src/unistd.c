@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pledge.h>
+#include <sys/wait.h>
 
 int sleep(int n)
 {

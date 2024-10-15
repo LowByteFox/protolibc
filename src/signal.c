@@ -13,18 +13,6 @@
 #define SA_RESETHAND	0x80000000
 #define SA_RESTORER	0x04000000
 
-struct sigset_t {
-	unsigned long __bits[128 / sizeof(long)];
-};
-typedef struct sigset_t sigset_t;
-
-struct sigaction {
-	void (*sa_handler)(int);
-	sigset_t sa_mask;
-	int sa_flags;
-	void (*sa_restorer)(void);
-};
-
 int sigreturn(unsigned long n);
 
 struct ksa {
@@ -43,7 +31,8 @@ int __sigaction(int sig, const struct sigaction *sa, struct sigaction *old)
 		ksa.restorer = sigreturn;
 		ksa.mask = sa->sa_mask;
 	}
-	if (sigaction(sig, sa ? (long) &ksa : 0, old ? (long) &_ksa : 0, 8))
+
+	if (sigaction(sig, sa ? (void*) &ksa : 0, old ? (void*) &_ksa : 0, 8))
 		return -1;
 	if (old) {
 		old->sa_handler = _ksa.handler;
@@ -52,8 +41,6 @@ int __sigaction(int sig, const struct sigaction *sa, struct sigaction *old)
 	}
 	return 0;
 }
-
-int sigaction(int sig, struct sigaction *sa, struct sigaction *old_sa);
 
 sighandler_t signal(int sig, sighandler_t func)
 {

@@ -61,6 +61,14 @@ int pledge(const char *, const char *);
 #define STDOUT_FILENO	1
 #define STDERR_FILENO	2
 
+extern char *optarg;
+extern int opterr;
+extern int optind;
+extern int optopt;
+extern int optreset;
+
+int getopt(int argc, char *const *argv, const char *optstring);
+
 __END_DECLS
 
 #endif

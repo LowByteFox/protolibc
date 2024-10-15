@@ -14,7 +14,7 @@ void *memrchr(void *s, int c, long n);
 int memcmp(char *s1, char *s2, long n);
 
 char *strcpy(char *dst, char *src);
-char *strchr(char *s, int c);
+char *strchr(const char *s, int c);
 char *strrchr(char *s, int c);
 size_t strlen(const char *s);
 int strcmp(char *s1, char *s2);

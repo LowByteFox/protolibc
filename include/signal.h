@@ -51,7 +51,22 @@ typedef void (*sighandler_t)(int);
 #define SIG_IGN		((void (*)(int)) 1)
 #define SIG_HOLD	((void (*)(int)) 2)
 
+
+struct sigset_t {
+	unsigned long __bits[128 / sizeof(long)];
+};
+typedef struct sigset_t sigset_t;
+
+struct sigaction {
+	void (*sa_handler)(int);
+	sigset_t sa_mask;
+	int sa_flags;
+	void (*sa_restorer)(void);
+};
+
 sighandler_t signal(int signum, sighandler_t action);
+int sigaction(int sig, struct sigaction *sa, struct sigaction *old_sa, ...);
+
 int kill(int pid, int sig);
 int raise(int sig);
 

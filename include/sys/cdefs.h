@@ -11,6 +11,10 @@
 
 #define __PROTOGEN__
 
+#ifdef _GNU_SOURCE
+#error "Who do you take me for? anti-POSIX?"
+#endif
+
 #ifdef __TINYC__
 # define __unused __attribute__((__unused__))
 # define __section(x) __attribute__((section(x)))
