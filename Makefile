@@ -16,12 +16,14 @@ OBJS = src/__libc_start_main.o src/assert.o src/atoi.o src/ctype.o			 \
 	arch/$(TARGET)/bits.o arch/$(TARGET)/lmem.o arch/$(TARGET)/setjmp.o		 \
 	arch/$(TARGET)/syscall.o
 
+CRTS = arch/$(TARGET)/crtn.o arch/$(TARGET)/crti.o
+
 all: arch/$(TARGET)/syscall.s libc.a start.o
 
 start.o: arch/$(TARGET)/start.o
 	ln $? $@
 
-libc.a: $(OBJS)
+libc.a: $(OBJS) $(CRTS)
 	$(AR) rcs $@ $(OBJS)
 
 syscall2gen: syscall2gen.c
@@ -39,11 +41,13 @@ install: start.o libc.a
 	install -vd $(ININC)
 	install -vm 755 libc.a $(INLIB)/libc.a
 	install -vm 644 start.o $(INLIB)/crt1.o
+	install -vm 644 arch/$(TARGET)/crtn.o $(INLIB)/crtn.o
+	install -vm 644 arch/$(TARGET)/crti.o $(INLIB)/crti.o
 	cp -rv include/* $(ININC)
 
 uninstall:
 	rm -vf $(INLIB)/libc.a
-	rm -vf $(INLIB)/crt1.o
+	rm -vf $(INLIB)/crt*.o
 	for file in $$(cd include; find . -type f && find . -type d | tail -n +2); do \
 		rm -rvf "$(ININC)/$$file"; \
 	done
