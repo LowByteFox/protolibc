@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *strncpy(char *d, char *s, long n)
+char *strncpy(char *d, const char *s, size_t n)
 {
 	int len = strlen(s);
 	if (len > n)
@@ -11,20 +11,20 @@ char *strncpy(char *d, char *s, long n)
 	return d;
 }
 
-char *strcat(char *d, char *s)
+char *strcat(char *d, const char *s)
 {
 	strcpy(d + strlen(d), s);
 	return d;
 }
 
-char *strstr(char *s, char *r)
+char *strstr(const char *s, const char *r)
 {
 	int len = strlen(r);
 	if (!len)
-		return s;
+		return (char*) s;
 	while (s) {
 		if (!memcmp(s, r, len))
-			return s;
+			return (char*) s;
 		s = strchr(s + 1, *r);
 	}
 	return NULL;

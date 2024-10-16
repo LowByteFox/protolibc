@@ -30,7 +30,6 @@ char *strtok(char *s, const char *delim);
 
 char *strncpy(char *d, const char *s, size_t n);
 char *strcat(char *d, const char *s);
-char *strncat(char *dest, const char *src, size_t n);
 int strncmp(const char *s1, const char *s2, size_t n);
 char *strstr(const char *s, const char *r);
 char *strerror(int errnum);
