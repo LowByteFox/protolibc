@@ -3,6 +3,8 @@
 #ifndef _FCNTL_H_
 #define _FCNTL_H_
 
+#include <sys/types.h>
+
 __BEGIN_DECLS
 
 #define O_RDONLY	00000
@@ -52,6 +54,14 @@ __BEGIN_DECLS
 int open(char *path, int flags, ...);
 int creat(char *path, int mode);
 int fcntl(int fd, int cmd, ...);
+
+struct flock {
+    short l_type;
+    short l_whence;
+    off_t l_start;
+    off_t l_len;
+    pid_t l_pid;
+};
 
 __END_DECLS
 
