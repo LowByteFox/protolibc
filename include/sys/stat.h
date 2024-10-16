@@ -3,6 +3,8 @@
 #ifndef _SYS_STAT_H_
 #define _SYS_STAT_H_
 
+#include <sys/types.h>
+
 __BEGIN_DECLS
 
 #include <inttypes.h>
@@ -96,7 +98,7 @@ int lstat(char *file, struct stat *buf);
 
 int chmod(char *file, int mode);
 int fchmod(int fd, int mode);
-int umask(int mask);
+mode_t umask(mode_t mask);
 int mkdir(char *path, int mode);
 int mknod(char *path, int mode, int dev);
 int mkfifo(char *path, int mode);

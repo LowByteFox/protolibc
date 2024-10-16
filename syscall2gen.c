@@ -89,6 +89,7 @@ static const syscall syscalls[] = {
     {"lstat",           6,      2, PLEDGE_RPATH},
     {"clone",           56,     5, PLEDGE_PROC},
     {"uname",           63,     1, PLEDGE_STDIO},
+    {"umask",           95,     1, PLEDGE_STDIO},
     {"fchdir",          81,     1, PLEDGE_STDIO},
     {"rename",          82,     2, PLEDGE_CPATH},
     {"getdents",        78,     3, PLEDGE_RPATH},
